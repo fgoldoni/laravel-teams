@@ -1,0 +1,32 @@
+{
+    "name": "goldoni/laravel-teams",
+    "description": "Team management for Laravel 12 + Livewire (Volt/Flux UI).",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Goldoni\\LaravelTeams\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Goldoni\\LaravelTeams\\Providers\\TeamsServiceProvider"
+            ]
+        }
+    },
+    "require": {
+        "php": "^8.4",
+        "illuminate/support": "^12.0",
+        "illuminate/database": "^12.0",
+        "illuminate/auth": "^12.0",
+        "livewire/livewire": "^3.5",
+        "livewire/volt": "^1.0"
+    },
+    "require-dev": {
+        "pestphp/pest": "^4.0",
+        "orchestra/testbench": "^9.0"
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
