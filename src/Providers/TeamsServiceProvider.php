@@ -32,13 +32,7 @@ class TeamsServiceProvider extends ServiceProvider
                 database_path('migrations/2025_09_17_000100_add_current_team_id_to_users_table.php'),
         ], 'teams-migrations');
 
-        $this->publishes([
-            __DIR__.'/../../resources/views' => resource_path('views/vendor/laravel-teams'),
-        ], 'teams-views');
-
-        $this->loadViewsFrom(__DIR__.'/../../resources/views', 'laravel-teams');
         $this->loadMigrationsFrom(__DIR__.'/../../database/migrations');
-        $this->loadRoutesFrom(__DIR__.'/../../routes/web.php');
 
         Gate::policy(Team::class, TeamPolicy::class);
 
