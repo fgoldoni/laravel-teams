@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace Goldoni\LaravelTeams\Services;
 
+use Goldoni\LaravelTeams\Contracts\TeamsManager as TeamsManagerContract;
 use Goldoni\LaravelTeams\Models\Team;
 use Illuminate\Contracts\Auth\Authenticatable;
 
-class TeamsManager
+class TeamsManager implements TeamsManagerContract
 {
-    public function current(?Authenticatable $user = null): ?Team
+    public function current(?Authenticatable $authenticatable = null): ?Team
     {
-        $u = $user ?: auth()->user();
+        $u = $authenticatable ?: auth()->user();
 
         if (! $u) {
             return null;
@@ -20,13 +21,13 @@ class TeamsManager
         return $u->currentTeam;
     }
 
-    public function forUser(Authenticatable $user): ?Team
+    public function forUser(Authenticatable $authenticatable): ?Team
     {
-        return $user->currentTeam;
+        return $authenticatable->currentTeam;
     }
 
-    public function isOwner(Authenticatable $user, Team $team): bool
+    public function isOwner(Authenticatable $authenticatable, Team $team): bool
     {
-        return $team->owner_id === $user->getAuthIdentifier();
+        return $team->owner_id === $authenticatable->getAuthIdentifier();
     }
 }

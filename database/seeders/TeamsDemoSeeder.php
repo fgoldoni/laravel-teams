@@ -15,11 +15,11 @@ class TeamsDemoSeeder extends Seeder
     {
         $userModel = config('auth.providers.users.model');
 
-        $owner = $userModel::factory()->create();
+        $owner  = $userModel::factory()->create();
         $member = $userModel::factory()->create();
 
         $team = app(CreateTeam::class)->handle($owner, 'Demo Team');
 
-        app(AddTeamMember::class)->handle($team, $member, TeamRoleEnum::MEMBER);
+        app(AddTeamMember::class)->handle($team, $member);
     }
 }

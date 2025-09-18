@@ -10,62 +10,63 @@ use Illuminate\Contracts\Auth\Authenticatable;
 
 class TeamPolicy
 {
-    public function view(?Authenticatable $user, Team $team): bool
+    public function view(?Authenticatable $authenticatable, Team $team): bool
     {
-        if (! $user) {
+        if (!$authenticatable instanceof Authenticatable) {
             return false;
         }
 
-        if ($user->id === $team->owner_id) {
+        if ($authenticatable->id === $team->owner_id) {
             return true;
         }
 
-        return $team->users()->whereKey($user->getAuthIdentifier())->exists();
+        return $team->users()->whereKey($authenticatable->getAuthIdentifier())->exists();
     }
 
-    public function create(Authenticatable $user): bool
+    public function create(Authenticatable $authenticatable): bool
     {
         $limit = (int) config('teams.max_teams_per_user', 0);
+
         if ($limit <= 0) {
             return true;
         }
 
         $count = app(config('auth.providers.users.model'))::query()
-            ->findOrFail($user->getAuthIdentifier())
+            ->findOrFail($authenticatable->getAuthIdentifier())
             ->teams()
             ->count();
 
         return $count < $limit;
     }
 
-    public function update(Authenticatable $user, Team $team): bool
+    public function update(Authenticatable $authenticatable, Team $team): bool
     {
-        if ($user->id === $team->owner_id) {
+        if ($authenticatable->id === $team->owner_id) {
             return true;
         }
 
         $role = $team->memberships()
-            ->where('user_id', $user->getAuthIdentifier())
+            ->where('user_id', $authenticatable->getAuthIdentifier())
             ->value('role');
 
         return in_array($role, [TeamRoleEnum::OWNER->value, TeamRoleEnum::ADMIN->value], true);
     }
 
-    public function manageMembers(Authenticatable $user, Team $team): bool
+    public function manageMembers(Authenticatable $authenticatable, Team $team): bool
     {
-        if ($user->id === $team->owner_id) {
+        if ($authenticatable->id === $team->owner_id) {
             return true;
         }
 
         $role = $team->memberships()
-            ->where('user_id', $user->getAuthIdentifier())
+            ->where('user_id', $authenticatable->getAuthIdentifier())
             ->value('role');
 
         return $role === TeamRoleEnum::ADMIN->value;
     }
 
-    public function delete(Authenticatable $user, Team $team): bool
+    public function delete(Authenticatable $authenticatable, Team $team): bool
     {
-        return $user->id === $team->owner_id;
+        return $authenticatable->id === $team->owner_id;
     }
 }

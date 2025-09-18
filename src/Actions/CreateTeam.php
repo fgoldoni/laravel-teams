@@ -13,25 +13,25 @@ use Illuminate\Support\Facades\DB;
 
 class CreateTeam
 {
-    public function __construct(private readonly Team $teams, private readonly TeamUser $teamUsers)
+    public function __construct(private readonly Team $team, private readonly TeamUser $teamUser)
     {
     }
 
-    public function handle(Authenticatable $owner, string $name): Team
+    public function handle(Authenticatable $authenticatable, string $name): Team
     {
-        return DB::transaction(function () use ($owner, $name): Team {
-            $team = $this->teams->newQuery()->create([
-                'name' => $name,
-                'owner_id' => $owner->getAuthIdentifier(),
+        return DB::transaction(function () use ($authenticatable, $name): Team {
+            $team = $this->team->newQuery()->create([
+                'name'     => $name,
+                'owner_id' => $authenticatable->getAuthIdentifier(),
             ]);
 
-            $this->teamUsers->newQuery()->create([
+            $this->teamUser->newQuery()->create([
                 'team_id' => $team->id,
-                'user_id' => $owner->getAuthIdentifier(),
-                'role' => TeamRoleEnum::OWNER->value,
+                'user_id' => $authenticatable->getAuthIdentifier(),
+                'role'    => TeamRoleEnum::OWNER->value,
             ]);
 
-            $owner->forceFill(['current_team_id' => $team->id])->save();
+            $authenticatable->forceFill(['current_team_id' => $team->id])->save();
 
             TeamCreated::dispatch($team);
 

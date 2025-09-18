@@ -20,7 +20,7 @@ class TeamUserFactory extends Factory
         return [
             'team_id' => Team::factory(),
             'user_id' => $userModel::factory(),
-            'role' => $this->faker->randomElement([
+            'role'    => $this->faker->randomElement([
                 TeamRoleEnum::ADMIN->value,
                 TeamRoleEnum::MEMBER->value,
                 TeamRoleEnum::VIEWER->value,

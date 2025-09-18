@@ -8,15 +8,18 @@ use Goldoni\LaravelTeams\Enums\TeamRoleEnum;
 use Goldoni\LaravelTeams\Events\MemberRoleChanged;
 use Goldoni\LaravelTeams\Models\Team;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Gate;
 
 class ChangeTeamMemberRole
 {
-    public function handle(Team $team, Model $user, TeamRoleEnum $role): void
+    public function handle(Team $team, Model $model, TeamRoleEnum $teamRoleEnum): void
     {
-        $team->memberships()
-            ->where('user_id', $user->getKey())
-            ->update(['role' => $role->value]);
+        Gate::authorize('manageMembers', $team);
 
-        MemberRoleChanged::dispatch($team, $user, $role);
+        $team->memberships()
+            ->where('user_id', $model->getKey())
+            ->update(['role' => $teamRoleEnum->value]);
+
+        MemberRoleChanged::dispatch($team, $model, $teamRoleEnum);
     }
 }

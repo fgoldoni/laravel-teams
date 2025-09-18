@@ -9,13 +9,13 @@ use Illuminate\Contracts\Auth\Authenticatable;
 
 class SwitchTeam
 {
-    public function handle(Authenticatable $user, Team $team): void
+    public function handle(Authenticatable $authenticatable, Team $team): void
     {
-        if ($team->users()->whereKey($user->getAuthIdentifier())->doesntExist()
-            && $team->owner_id !== $user->getAuthIdentifier()) {
+        if ($team->users()->whereKey($authenticatable->getAuthIdentifier())->doesntExist()
+            && $team->owner_id !== $authenticatable->getAuthIdentifier()) {
             return;
         }
 
-        $user->forceFill(['current_team_id' => $team->id])->save();
+        $authenticatable->forceFill(['current_team_id' => $team->id])->save();
     }
 }

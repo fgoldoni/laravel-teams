@@ -9,26 +9,29 @@ use Goldoni\LaravelTeams\Events\MemberAdded;
 use Goldoni\LaravelTeams\Models\Team;
 use Goldoni\LaravelTeams\Models\TeamUser;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Gate;
 
 class AddTeamMember
 {
-    public function __construct(private readonly TeamUser $teamUsers)
+    public function __construct(private readonly TeamUser $teamUser)
     {
     }
 
-    public function handle(Team $team, Model $user, TeamRoleEnum $role = TeamRoleEnum::MEMBER): TeamUser
+    public function handle(Team $team, Model $model, TeamRoleEnum $teamRoleEnum = TeamRoleEnum::MEMBER): TeamUser
     {
-        $membership = $this->teamUsers->newQuery()->create([
-            'team_id' => $team->id,
-            'user_id' => $user->getKey(),
-            'role' => $role->value,
-        ]);
+        Gate::authorize('manageMembers', $team);
 
-        MemberAdded::dispatch($team, $user, $role);
+        $membership = $this->teamUser->newQuery()->firstOrCreate(
+            ['team_id' => $team->id, 'user_id' => $model->getKey()],
+            ['role' => $teamRoleEnum->value]
+        );
 
-        if ((bool) config('teams.invite_notifications', false)) {
-            $user->notify(new \Goldoni\LaravelTeams\Notifications\MemberAdded($team, $role));
+        if ($membership->wasRecentlyCreated) {
+            MemberAdded::dispatch($team, $model, $teamRoleEnum);
+
+            if (config('teams.invite_notifications', false)) {
+                $model->notify(new \Goldoni\LaravelTeams\Notifications\MemberAdded($team, $teamRoleEnum));
+            }
         }
 
         return $membership;

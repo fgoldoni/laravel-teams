@@ -9,9 +9,9 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table): void {
-            $table->unsignedBigInteger('current_team_id')->nullable()->after('password');
-            $table->foreign('current_team_id')
+        Schema::table('users', function (Blueprint $blueprint): void {
+            $blueprint->unsignedBigInteger('current_team_id')->nullable()->after('password');
+            $blueprint->foreign('current_team_id')
                 ->references('id')
                 ->on('teams')
                 ->nullOnDelete();
@@ -20,9 +20,9 @@ return new class extends Migration {
 
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table): void {
-            $table->dropForeign(['current_team_id']);
-            $table->dropColumn('current_team_id');
+        Schema::table('users', function (Blueprint $blueprint): void {
+            $blueprint->dropForeign(['current_team_id']);
+            $blueprint->dropColumn('current_team_id');
         });
     }
 };

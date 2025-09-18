@@ -16,7 +16,7 @@ class TeamFactory extends Factory
         $userModel = config('auth.providers.users.model');
 
         return [
-            'name' => $this->faker->company(),
+            'name'     => $this->faker->company(),
             'owner_id' => $userModel::factory(),
         ];
     }

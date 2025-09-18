@@ -7,17 +7,20 @@ namespace Goldoni\LaravelTeams\Actions;
 use Goldoni\LaravelTeams\Events\MemberRemoved;
 use Goldoni\LaravelTeams\Models\Team;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Gate;
 
 class RemoveTeamMember
 {
-    public function handle(Team $team, Model $user): void
+    public function handle(Team $team, Model $model): void
     {
-        $team->memberships()->where('user_id', $user->getKey())->delete();
+        Gate::authorize('manageMembers', $team);
 
-        if ($user->getAttribute('current_team_id') === $team->getKey()) {
-            $user->forceFill(['current_team_id' => null])->save();
+        $team->memberships()->where('user_id', $model->getKey())->delete();
+
+        if ($model->getAttribute('current_team_id') === $team->getKey()) {
+            $model->forceFill(['current_team_id' => null])->save();
         }
 
-        MemberRemoved::dispatch($team, $user);
+        MemberRemoved::dispatch($team, $model);
     }
 }

@@ -9,22 +9,22 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        Schema::create('team_user', function (Blueprint $table): void {
-            $table->id();
-            $table->ulid()->unique();
-            $table->unsignedBigInteger('team_id')->index();
-            $table->unsignedBigInteger('user_id')->index();
-            $table->string('role', 32);
-            $table->timestamps();
+        Schema::create('team_user', function (Blueprint $blueprint): void {
+            $blueprint->id();
+            $blueprint->ulid()->unique();
+            $blueprint->unsignedBigInteger('team_id')->index();
+            $blueprint->unsignedBigInteger('user_id')->index();
+            $blueprint->string('role', 32);
+            $blueprint->timestamps();
 
-            $table->unique(['team_id', 'user_id']);
+            $blueprint->unique(['team_id', 'user_id']);
 
-            $table->foreign('team_id')
+            $blueprint->foreign('team_id')
                 ->references('id')
                 ->on('teams')
                 ->cascadeOnDelete();
 
-            $table->foreign('user_id')
+            $blueprint->foreign('user_id')
                 ->references('id')
                 ->on('users')
                 ->cascadeOnDelete();

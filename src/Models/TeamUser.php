@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Goldoni\LaravelTeams\Models;
 
 use Goldoni\LaravelTeams\Concerns\HasExtraUlid;
+use Goldoni\LaravelTeams\Database\Factories\TeamUserFactory;
 use Goldoni\LaravelTeams\Enums\TeamRoleEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -28,8 +29,13 @@ class TeamUser extends Model
     {
         return [
             'ulid' => 'string',
-            'role' => 'string',
+            'role' => TeamRoleEnum::class,
         ];
+    }
+
+    protected static function newFactory(): TeamUserFactory
+    {
+        return TeamUserFactory::new();
     }
 
     public function team(): BelongsTo
@@ -44,21 +50,21 @@ class TeamUser extends Model
 
     public function isOwner(): bool
     {
-        return $this->role === TeamRoleEnum::OWNER->value;
+        return $this->role === TeamRoleEnum::OWNER;
     }
 
     public function isAdmin(): bool
     {
-        return $this->role === TeamRoleEnum::ADMIN->value;
+        return $this->role === TeamRoleEnum::ADMIN;
     }
 
     public function isMember(): bool
     {
-        return $this->role === TeamRoleEnum::MEMBER->value;
+        return $this->role === TeamRoleEnum::MEMBER;
     }
 
     public function isViewer(): bool
     {
-        return $this->role === TeamRoleEnum::VIEWER->value;
+        return $this->role === TeamRoleEnum::VIEWER;
     }
 }

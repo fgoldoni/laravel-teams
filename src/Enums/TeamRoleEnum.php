@@ -6,8 +6,8 @@ namespace Goldoni\LaravelTeams\Enums;
 
 enum TeamRoleEnum: string
 {
-    case OWNER = 'OWNER';
-    case ADMIN = 'ADMIN';
+    case OWNER  = 'OWNER';
+    case ADMIN  = 'ADMIN';
     case MEMBER = 'MEMBER';
     case VIEWER = 'VIEWER';
 }
