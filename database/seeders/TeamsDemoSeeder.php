@@ -6,7 +6,6 @@ namespace Goldoni\LaravelTeams\Database\Seeders;
 
 use Goldoni\LaravelTeams\Actions\AddTeamMember;
 use Goldoni\LaravelTeams\Actions\CreateTeam;
-use Goldoni\LaravelTeams\Enums\TeamRoleEnum;
 use Illuminate\Database\Seeder;
 
 class TeamsDemoSeeder extends Seeder

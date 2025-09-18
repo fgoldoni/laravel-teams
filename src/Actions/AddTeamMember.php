@@ -21,12 +21,12 @@ class AddTeamMember
     {
         Gate::authorize('manageMembers', $team);
 
-        $membership = $this->teamUser->newQuery()->firstOrCreate(
+        $teamUser = $this->teamUser->newQuery()->firstOrCreate(
             ['team_id' => $team->id, 'user_id' => $model->getKey()],
             ['role' => $teamRoleEnum->value]
         );
 
-        if ($membership->wasRecentlyCreated) {
+        if ($teamUser->wasRecentlyCreated) {
             MemberAdded::dispatch($team, $model, $teamRoleEnum);
 
             if (config('teams.invite_notifications', false)) {
@@ -34,6 +34,6 @@ class AddTeamMember
             }
         }
 
-        return $membership;
+        return $teamUser;
     }
 }
