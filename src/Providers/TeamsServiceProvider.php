@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Goldoni\LaravelTeams\Providers;
 
+use Goldoni\LaravelTeams\Console\Commands\TeamsHealthCheckCommand;
 use Goldoni\LaravelTeams\Contracts\TeamsManager as TeamsManagerContract;
 use Goldoni\LaravelTeams\Models\Team;
-use Goldoni\LaravelTeams\Observers\TeamObserver;
 use Goldoni\LaravelTeams\Policies\TeamPolicy;
 use Goldoni\LaravelTeams\Services\TeamsManager;
 use Illuminate\Support\Facades\Gate;
@@ -19,7 +19,6 @@ class TeamsServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__ . '/../../config/teams.php', 'teams');
-
         $this->app->singleton(TeamsManagerContract::class, TeamsManager::class);
     }
 
@@ -38,7 +37,7 @@ class TeamsServiceProvider extends ServiceProvider
 
         Gate::policy(Team::class, TeamPolicy::class);
 
-        Gate::before(function ($user, $ability): ?true {
+        Gate::before(function ($user): ?true {
             $role = config('teams.super_admin_role');
 
             if ($role && method_exists($user, 'hasRole') && $user->hasRole($role)) {
@@ -48,6 +47,10 @@ class TeamsServiceProvider extends ServiceProvider
             return null;
         });
 
-        Team::observe(TeamObserver::class);
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                TeamsHealthCheckCommand::class,
+            ]);
+        }
     }
 }
