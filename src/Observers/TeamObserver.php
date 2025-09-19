@@ -11,12 +11,22 @@ class TeamObserver
 {
     public function deleted(Team $team): void
     {
-        $userIds  = $team->users()->pluck('users.id')->all();
-        $ownerId  = $team->owner_id ? [$team->owner_id] : [];
-        $affected = array_values(array_unique(array_merge($userIds, $ownerId)));
+        $this->recalculateCurrentTeamForAffectedUsers($team);
+    }
 
-        if ($affected !== []) {
-            RecalculateUsersCurrentTeam::dispatch($affected, $team->getKey());
+    public function forceDeleted(Team $team): void
+    {
+        $this->recalculateCurrentTeamForAffectedUsers($team);
+    }
+
+    private function recalculateCurrentTeamForAffectedUsers(Team $team): void
+    {
+        $userIdentifiers = $team->users()->pluck('users.id')->all();
+        $ownerIdentifierList = $team->owner_id ? [$team->owner_id] : [];
+        $affectedUserIdentifiers = array_values(array_unique(array_merge($userIdentifiers, $ownerIdentifierList)));
+
+        if ($affectedUserIdentifiers !== []) {
+            RecalculateUsersCurrentTeam::dispatchSync($affectedUserIdentifiers, $team->getKey());
         }
     }
 }

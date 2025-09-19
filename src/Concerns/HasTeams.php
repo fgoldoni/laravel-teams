@@ -108,7 +108,11 @@ trait HasTeams
             ? optional($model->memberships->firstWhere('user_id', $this->getKey()))->role
             : $model->memberships()->where('user_id', $this->getKey())->value('role');
 
-        return $role ? TeamRoleEnum::tryFrom((string) $role) : null;
+        if ($role instanceof TeamRoleEnum) {
+            return $role;
+        }
+
+        return $role !== null ? TeamRoleEnum::tryFrom((string) $role) : null;
     }
 
     public function hasTeamRole(Model $model, TeamRoleEnum|string $role): bool

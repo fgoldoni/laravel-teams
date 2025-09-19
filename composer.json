@@ -6,7 +6,8 @@
     "autoload": {
         "psr-4": {
             "Goldoni\\LaravelTeams\\": "src/",
-            "Goldoni\\LaravelTeams\\Database\\Factories\\": "database/factories/"
+            "Goldoni\\LaravelTeams\\Database\\Factories\\": "database/factories/",
+            "Goldoni\\LaravelTeams\\Database\\Seeders\\": "database/seeders/"
         }
     },
     "extra": {

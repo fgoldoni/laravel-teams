@@ -11,6 +11,7 @@ use Goldoni\LaravelTeams\Models\Team;
 use Goldoni\LaravelTeams\Models\TeamUser;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Throwable;
 
 final readonly class CreateTeam
@@ -27,11 +28,13 @@ final readonly class CreateTeam
         try {
             $team = DB::transaction(function () use ($ownerId, $name, $authenticatable): Team {
                 $team = $this->team->newQuery()->create([
+                    'ulid'     => (string) Str::ulid(),
                     'name'     => $name,
                     'owner_id' => $ownerId,
                 ]);
 
                 $this->teamUser->newQuery()->create([
+                    'ulid'     => (string) Str::ulid(),
                     'team_id' => $team->getKey(),
                     'user_id' => $ownerId,
                     'role'    => TeamRoleEnum::OWNER,
@@ -42,7 +45,11 @@ final readonly class CreateTeam
                 return $team;
             });
 
-            DB::afterCommit(fn () => TeamCreated::dispatch($team));
+            if (DB::transactionLevel() > 0) {
+                DB::afterCommit(static fn () => TeamCreated::dispatch($team));
+            } else {
+                TeamCreated::dispatch($team);
+            }
 
             return $team;
         } catch (Throwable $throwable) {

@@ -13,4 +13,5 @@ return [
     'max_teams_per_user'   => 0,
     'invite_notifications' => true,
     'super_admin_role'     => 'Super Admin',
+    'observe_current_team'     => true,
 ];

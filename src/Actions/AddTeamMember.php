@@ -13,6 +13,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 use Throwable;
 
 final readonly class AddTeamMember
@@ -31,7 +32,7 @@ final readonly class AddTeamMember
             $teamUser = DB::transaction(function () use ($team, $model, $teamRoleEnum, &$created): TeamUser {
                 $teamUser = $this->teamUser->newQuery()->firstOrCreate(
                     ['team_id' => $team->getKey(), 'user_id' => $model->getKey()],
-                    ['role' => $teamRoleEnum]
+                    ['role' => $teamRoleEnum, 'ulid' => (string) Str::ulid()]
                 );
 
                 $created = $teamUser->wasRecentlyCreated;

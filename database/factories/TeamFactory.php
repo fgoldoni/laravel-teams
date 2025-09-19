@@ -6,6 +6,7 @@ namespace Goldoni\LaravelTeams\Database\Factories;
 
 use Goldoni\LaravelTeams\Models\Team;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 
 class TeamFactory extends Factory
 {
@@ -18,6 +19,7 @@ class TeamFactory extends Factory
         return [
             'name'     => $this->faker->company(),
             'owner_id' => $userModel::factory(),
+            'ulid' => (string) Str::ulid(),
         ];
     }
 }

@@ -25,6 +25,8 @@ class TeamUserFactory extends Factory
                 TeamRoleEnum::MEMBER->value,
                 TeamRoleEnum::VIEWER->value,
             ]),
+            'created_at' => now(),
+            'updated_at' => now(),
         ];
     }
 }

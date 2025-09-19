@@ -24,7 +24,7 @@ final class DeleteTeam
                 $team->delete();
             });
 
-            DB::afterCommit(fn () => TeamDeleted::dispatch($team));
+            DB::afterCommit(fn () => TeamDeleted::dispatch($team->getKey()));
         } catch (AuthorizationException|Throwable $e) {
             throw new CannotDeleteTeam($e->getMessage(), 0, $e);
         }

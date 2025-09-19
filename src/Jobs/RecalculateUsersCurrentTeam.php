@@ -18,38 +18,37 @@ class RecalculateUsersCurrentTeam implements ShouldQueue
     use Queueable;
     use SerializesModels;
 
-    public function __construct(public array $userIds, public int $removedTeamId)
+    public function __construct(public array $userIdentifiers, public int $removedTeamIdentifier)
     {
     }
 
     public function handle(): void
     {
-        $userClass = config('auth.providers.users.model');
-        $users     = $userClass::query()
-            ->whereIn('id', $this->userIds)
-            ->where('current_team_id', $this->removedTeamId)
+        $userModelClass = config('auth.providers.users.model');
+
+        $usersCollection = $userModelClass::query()
+            ->whereIn('id', $this->userIdentifiers)
+            ->where('current_team_id', $this->removedTeamIdentifier)
             ->get();
 
-        $users->each(function ($user): void {
-            $nextOwned = $user->ownedTeams()
+        $usersCollection->each(function ($user): void {
+            $nextOwnedTeam = $user->ownedTeams()
                 ->whereNull('deleted_at')
                 ->orderBy('id')
                 ->first();
 
-            if ($nextOwned instanceof Team) {
-                $user->forceFill(['current_team_id' => $nextOwned->getKey()])->save();
-
+            if ($nextOwnedTeam instanceof Team) {
+                $user->forceFill(['current_team_id' => $nextOwnedTeam->getKey()])->save();
                 return;
             }
 
-            $nextMember = $user->teams()
+            $nextMemberTeam = $user->teams()
                 ->whereNull('teams.deleted_at')
                 ->orderBy('teams.id')
                 ->first();
 
-            if ($nextMember instanceof Team) {
-                $user->forceFill(['current_team_id' => $nextMember->getKey()])->save();
-
+            if ($nextMemberTeam instanceof Team) {
+                $user->forceFill(['current_team_id' => $nextMemberTeam->getKey()])->save();
                 return;
             }
 

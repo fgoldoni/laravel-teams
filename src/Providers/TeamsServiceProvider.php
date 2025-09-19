@@ -7,6 +7,7 @@ namespace Goldoni\LaravelTeams\Providers;
 use Goldoni\LaravelTeams\Console\Commands\TeamsHealthCheckCommand;
 use Goldoni\LaravelTeams\Contracts\TeamsManager as TeamsManagerContract;
 use Goldoni\LaravelTeams\Models\Team;
+use Goldoni\LaravelTeams\Observers\TeamObserver;
 use Goldoni\LaravelTeams\Policies\TeamPolicy;
 use Goldoni\LaravelTeams\Services\TeamsManager;
 use Goldoni\ModelPermissions\Console\Commands\ModelPermissionsHealthCheckCommand;
@@ -37,6 +38,10 @@ class TeamsServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(__DIR__ . '/../../database/migrations');
 
         Gate::policy(Team::class, TeamPolicy::class);
+
+        if (config('teams.observe_current_team', true)) {
+            Team::observe(TeamObserver::class);
+        }
 
         Gate::before(function ($user): ?true {
             $role = config('teams.super_admin_role');
