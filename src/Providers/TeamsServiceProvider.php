@@ -9,6 +9,7 @@ use Goldoni\LaravelTeams\Contracts\TeamsManager as TeamsManagerContract;
 use Goldoni\LaravelTeams\Models\Team;
 use Goldoni\LaravelTeams\Policies\TeamPolicy;
 use Goldoni\LaravelTeams\Services\TeamsManager;
+use Goldoni\ModelPermissions\Console\Commands\ModelPermissionsHealthCheckCommand;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Override;
@@ -50,6 +51,7 @@ class TeamsServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 TeamsHealthCheckCommand::class,
+                ModelPermissionsHealthCheckCommand::class,
             ]);
         }
     }
