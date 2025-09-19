@@ -6,6 +6,7 @@ namespace Goldoni\LaravelTeams\Concerns;
 
 use Goldoni\LaravelTeams\Enums\TeamRoleEnum;
 use Goldoni\LaravelTeams\Models\Team;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -53,77 +54,80 @@ trait HasTeams
     }
 
 
-    public function belongsToTeam(Team $team): bool
+    public function belongsToTeam(Model $model): bool
     {
-        if ((int) $team->owner_id === (int) $this->getKey()) {
+        if ((int) $model->owner_id === (int) $this->getKey()) {
             return true;
         }
 
-        return $this->teams()->whereKey($team->getKey())->exists();
+        return $this->teams()->whereKey($model->getKey())->exists();
     }
 
-    public function switchTeam(Team $team): bool
+    public function switchTeam(Model $model): bool
     {
-        if (! $this->belongsToTeam($team)) {
+        if (! $this->belongsToTeam($model)) {
             return false;
         }
 
-        $this->forceFill(['current_team_id' => $team->getKey()])->save();
-        $this->setRelation('currentTeam', $team);
+        $this->forceFill(['current_team_id' => $model->getKey()])->save();
+        $this->setRelation('currentTeam', $model);
 
         return true;
     }
 
-    public function isOnTeam(Team $team): bool
+    public function isOnTeam(Model $model): bool
     {
-        return $this->belongsToTeam($team);
+        return $this->belongsToTeam($model);
     }
 
-    public function ownsTeam(Team $team): bool
+    public function ownsTeam(Model $model): bool
     {
-        return (int) $team->owner_id === (int) $this->getKey();
+        return (int) $model->owner_id === (int) $this->getKey();
     }
 
-    public function isCurrentTeam(Team $team): bool
+    public function isCurrentTeam(Model $model): bool
     {
-        return (int) $this->getAttribute('current_team_id') === (int) $team->getKey();
+        return (int) $this->getAttribute('current_team_id') === (int) $model->getKey();
     }
 
     public function allTeams(): Collection
     {
-        $owned = $this->ownedTeams()->get();
+        $owned  = $this->ownedTeams()->get();
         $member = $this->teams()->get();
 
         return $owned->merge($member)->unique('id')->values();
     }
 
-    public function teamRole(Team $team): ?TeamRoleEnum
+    public function teamRole(Model $model): ?TeamRoleEnum
     {
-        if ((int) $team->owner_id === (int) $this->getKey()) {
+        if ((int) $model->owner_id === (int) $this->getKey()) {
             return TeamRoleEnum::OWNER;
         }
 
-        $role = $team->relationLoaded('memberships')
-            ? optional($team->memberships->firstWhere('user_id', $this->getKey()))->role
-            : $team->memberships()->where('user_id', $this->getKey())->value('role');
+        $role = $model->relationLoaded('memberships')
+            ? optional($model->memberships->firstWhere('user_id', $this->getKey()))->role
+            : $model->memberships()->where('user_id', $this->getKey())->value('role');
 
         return $role ? TeamRoleEnum::tryFrom((string) $role) : null;
     }
 
-    public function hasTeamRole(Team $team, TeamRoleEnum|string $role): bool
+    public function hasTeamRole(Model $model, TeamRoleEnum|string $role): bool
     {
-        $current = $this->teamRole($team);
+        $current = $this->teamRole($model);
+
         if ($current === null) {
             return false;
         }
 
-        $expected = $role instanceof TeamRoleEnum ? $role : TeamRoleEnum::from((string) $role);
+        $expected = $role instanceof TeamRoleEnum ? $role : TeamRoleEnum::from($role);
+
         return $current === $expected;
     }
 
-    public function hasAnyTeamRole(Team $team, array $roles): bool
+    public function hasAnyTeamRole(Model $model, array $roles): bool
     {
-        $current = $this->teamRole($team);
+        $current = $this->teamRole($model);
+
         if ($current === null) {
             return false;
         }
@@ -136,51 +140,51 @@ trait HasTeams
         return in_array($current, $expected, true);
     }
 
-    private function roleRank(TeamRoleEnum $role): int
+    private function roleRank(TeamRoleEnum $teamRoleEnum): int
     {
-        return match ($role) {
+        return match ($teamRoleEnum) {
             TeamRoleEnum::VIEWER => 1,
             TeamRoleEnum::MEMBER => 2,
-            TeamRoleEnum::ADMIN => 3,
-            TeamRoleEnum::OWNER => 4,
+            TeamRoleEnum::ADMIN  => 3,
+            TeamRoleEnum::OWNER  => 4,
         };
     }
 
-    public function hasTeamRoleAtLeast(Team $team, TeamRoleEnum|string $min): bool
+    public function hasTeamRoleAtLeast(Model $model, TeamRoleEnum|string $min): bool
     {
-        $current = $this->teamRole($team);
+        $current = $this->teamRole($model);
+
         if ($current === null) {
             return false;
         }
 
-        $minEnum = $min instanceof TeamRoleEnum ? $min : TeamRoleEnum::from((string) $min);
+        $minEnum = $min instanceof TeamRoleEnum ? $min : TeamRoleEnum::from($min);
 
         return $this->roleRank($current) >= $this->roleRank($minEnum);
     }
 
-    public function hasTeamRoleOwner(Team $team): bool
+    public function hasTeamRoleOwner(Model $model): bool
     {
-        return $this->hasTeamRole($team, TeamRoleEnum::OWNER);
+        return $this->hasTeamRole($model, TeamRoleEnum::OWNER);
     }
 
-    public function hasTeamRoleAdmin(Team $team): bool
+    public function hasTeamRoleAdmin(Model $model): bool
     {
-        return $this->hasTeamRoleAtLeast($team, TeamRoleEnum::ADMIN);
+        return $this->hasTeamRoleAtLeast($model, TeamRoleEnum::ADMIN);
     }
 
-    public function hasTeamRoleMember(Team $team): bool
+    public function hasTeamRoleMember(Model $model): bool
     {
-        return $this->hasTeamRoleAtLeast($team, TeamRoleEnum::MEMBER);
+        return $this->hasTeamRoleAtLeast($model, TeamRoleEnum::MEMBER);
     }
 
-    public function hasTeamRoleViewer(Team $team): bool
+    public function hasTeamRoleViewer(Model $model): bool
     {
-        return $this->hasTeamRoleAtLeast($team, TeamRoleEnum::VIEWER);
+        return $this->hasTeamRoleAtLeast($model, TeamRoleEnum::VIEWER);
     }
 
-    public function hasTeamRoleManagerial(Team $team): bool
+    public function hasTeamRoleManagerial(Model $model): bool
     {
-        return $this->hasTeamRoleAtLeast($team, TeamRoleEnum::ADMIN);
+        return $this->hasTeamRoleAtLeast($model, TeamRoleEnum::ADMIN);
     }
 }
-

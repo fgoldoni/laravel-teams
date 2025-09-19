@@ -4,18 +4,23 @@ declare(strict_types=1);
 
 namespace Goldoni\LaravelTeams\Actions;
 
+use Goldoni\LaravelTeams\Exceptions\CannotSwitchTeam;
 use Goldoni\LaravelTeams\Models\Team;
 use Illuminate\Contracts\Auth\Authenticatable;
 
-class SwitchTeam
+final class SwitchTeam
 {
     public function handle(Authenticatable $authenticatable, Team $team): void
     {
-        if ($team->users()->whereKey($authenticatable->getAuthIdentifier())->doesntExist()
-            && $team->owner_id !== $authenticatable->getAuthIdentifier()) {
-            return;
+        $userId = (int) $authenticatable->getAuthIdentifier();
+
+        $isMember = $team->users()->whereKey($userId)->exists();
+        $isOwner  = (int) $team->owner_id === $userId;
+
+        if (! $isMember && ! $isOwner) {
+            throw new CannotSwitchTeam('User does not belong to this team.');
         }
 
-        $authenticatable->forceFill(['current_team_id' => $team->id])->save();
+        $authenticatable->forceFill(['current_team_id' => $team->getKey()])->save();
     }
 }

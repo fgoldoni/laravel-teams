@@ -15,6 +15,7 @@ return new class extends Migration {
             $blueprint->unsignedBigInteger('team_id')->index();
             $blueprint->unsignedBigInteger('user_id')->index();
             $blueprint->string('role', 32);
+            $blueprint->softDeletes();
             $blueprint->timestamps();
 
             $blueprint->unique(['team_id', 'user_id']);

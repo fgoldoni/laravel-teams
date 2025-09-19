@@ -7,14 +7,18 @@ namespace Goldoni\LaravelTeams\Models;
 use Goldoni\LaravelTeams\Concerns\HasExtraUlid;
 use Goldoni\LaravelTeams\Database\Factories\TeamUserFactory;
 use Goldoni\LaravelTeams\Enums\TeamRoleEnum;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TeamUser extends Model
 {
     use HasFactory;
     use HasExtraUlid;
+    use SoftDeletes;
 
     protected $table = 'team_user';
 
@@ -28,7 +32,6 @@ class TeamUser extends Model
     protected function casts(): array
     {
         return [
-            'ulid' => 'string',
             'role' => TeamRoleEnum::class,
         ];
     }
@@ -66,5 +69,11 @@ class TeamUser extends Model
     public function isViewer(): bool
     {
         return $this->role === TeamRoleEnum::VIEWER;
+    }
+
+    #[Scope]
+    public function forUser(Builder $builder, int $userId): Builder
+    {
+        return $builder->where('user_id', $userId);
     }
 }

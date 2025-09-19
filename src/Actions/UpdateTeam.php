@@ -4,16 +4,27 @@ declare(strict_types=1);
 
 namespace Goldoni\LaravelTeams\Actions;
 
+use Goldoni\LaravelTeams\Exceptions\CannotUpdateTeam;
 use Goldoni\LaravelTeams\Models\Team;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Throwable;
 
-class UpdateTeam
+final class UpdateTeam
 {
     public function handle(Team $team, string $name): Team
     {
-        Gate::authorize('update', $team);
-        $team->forceFill(['name' => $name])->save();
+        try {
+            Gate::authorize('update', $team);
 
-        return $team;
+            DB::transaction(function () use ($team, $name): void {
+                $team->forceFill(['name' => trim($name)])->save();
+            });
+
+            return $team;
+        } catch (AuthorizationException|Throwable $e) {
+            throw new CannotUpdateTeam($e->getMessage(), 0, $e);
+        }
     }
 }

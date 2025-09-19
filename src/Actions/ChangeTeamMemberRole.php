@@ -6,20 +6,32 @@ namespace Goldoni\LaravelTeams\Actions;
 
 use Goldoni\LaravelTeams\Enums\TeamRoleEnum;
 use Goldoni\LaravelTeams\Events\MemberRoleChanged;
+use Goldoni\LaravelTeams\Exceptions\CannotChangeMemberRole;
 use Goldoni\LaravelTeams\Models\Team;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Throwable;
 
-class ChangeTeamMemberRole
+final class ChangeTeamMemberRole
 {
     public function handle(Team $team, Model $model, TeamRoleEnum $teamRoleEnum): void
     {
-        Gate::authorize('manageMembers', $team);
+        try {
+            Gate::authorize('manageMembers', $team);
 
-        $team->memberships()
-            ->where('user_id', $model->getKey())
-            ->update(['role' => $teamRoleEnum->value]);
+            $affected = DB::transaction(fn (): int => $team->memberships()
+                ->where('user_id', $model->getKey())
+                ->update(['role' => $teamRoleEnum]));
 
-        MemberRoleChanged::dispatch($team, $model, $teamRoleEnum);
+            if ($affected === 0) {
+                throw new CannotChangeMemberRole('Membership not found.');
+            }
+
+            DB::afterCommit(fn () => MemberRoleChanged::dispatch($team, $model, $teamRoleEnum));
+        } catch (AuthorizationException|Throwable $e) {
+            throw new CannotChangeMemberRole($e->getMessage(), 0, $e);
+        }
     }
 }

@@ -6,13 +6,16 @@ namespace Goldoni\LaravelTeams\Providers;
 
 use Goldoni\LaravelTeams\Contracts\TeamsManager as TeamsManagerContract;
 use Goldoni\LaravelTeams\Models\Team;
+use Goldoni\LaravelTeams\Observers\TeamObserver;
 use Goldoni\LaravelTeams\Policies\TeamPolicy;
 use Goldoni\LaravelTeams\Services\TeamsManager;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
+use Override;
 
 class TeamsServiceProvider extends ServiceProvider
 {
+    #[Override]
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__ . '/../../config/teams.php', 'teams');
@@ -44,5 +47,7 @@ class TeamsServiceProvider extends ServiceProvider
 
             return null;
         });
+
+        Team::observe(TeamObserver::class);
     }
 }
