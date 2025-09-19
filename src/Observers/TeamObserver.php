@@ -21,8 +21,8 @@ class TeamObserver
 
     private function recalculateCurrentTeamForAffectedUsers(Team $team): void
     {
-        $userIdentifiers = $team->users()->pluck('users.id')->all();
-        $ownerIdentifierList = $team->owner_id ? [$team->owner_id] : [];
+        $userIdentifiers         = $team->users()->pluck('users.id')->all();
+        $ownerIdentifierList     = $team->owner_id ? [$team->owner_id] : [];
         $affectedUserIdentifiers = array_values(array_unique(array_merge($userIdentifiers, $ownerIdentifierList)));
 
         if ($affectedUserIdentifiers !== []) {

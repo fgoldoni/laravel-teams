@@ -19,7 +19,7 @@ class TeamFactory extends Factory
         return [
             'name'     => $this->faker->company(),
             'owner_id' => $userModel::factory(),
-            'ulid' => (string) Str::ulid(),
+            'ulid'     => (string) Str::ulid(),
         ];
     }
 }

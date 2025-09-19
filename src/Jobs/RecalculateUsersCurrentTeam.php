@@ -39,6 +39,7 @@ class RecalculateUsersCurrentTeam implements ShouldQueue
 
             if ($nextOwnedTeam instanceof Team) {
                 $user->forceFill(['current_team_id' => $nextOwnedTeam->getKey()])->save();
+
                 return;
             }
 
@@ -49,6 +50,7 @@ class RecalculateUsersCurrentTeam implements ShouldQueue
 
             if ($nextMemberTeam instanceof Team) {
                 $user->forceFill(['current_team_id' => $nextMemberTeam->getKey()])->save();
+
                 return;
             }
 

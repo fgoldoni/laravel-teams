@@ -35,9 +35,9 @@ final readonly class CreateTeam
 
                 $this->teamUser->newQuery()->create([
                     'ulid'     => (string) Str::ulid(),
-                    'team_id' => $team->getKey(),
-                    'user_id' => $ownerId,
-                    'role'    => TeamRoleEnum::OWNER,
+                    'team_id'  => $team->getKey(),
+                    'user_id'  => $ownerId,
+                    'role'     => TeamRoleEnum::OWNER,
                 ]);
 
                 $authenticatable->forceFill(['current_team_id' => $team->getKey()])->save();
