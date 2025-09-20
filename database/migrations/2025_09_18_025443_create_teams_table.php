@@ -14,6 +14,7 @@ return new class extends Migration {
             $blueprint->ulid()->unique();
             $blueprint->string('name', 255);
             $blueprint->unsignedBigInteger('owner_id')->index();
+            $blueprint->boolean('online')->default(false);
             $blueprint->timestamps();
             $blueprint->softDeletes();
 

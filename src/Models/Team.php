@@ -32,6 +32,7 @@ class Team extends Model
         return [
             'ulid' => 'string',
             'name' => 'string',
+            'online' => 'boolean',
         ];
     }
 
