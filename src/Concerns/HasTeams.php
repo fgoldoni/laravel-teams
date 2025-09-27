@@ -185,16 +185,18 @@ trait HasTeams
 
         return $query->where(function ($outer) use ($eligibleTeamIds, $rolesAtLeast) {
             $outer->whereHas('teams', function ($q) use ($eligibleTeamIds, $rolesAtLeast) {
-                $q->whereIn('teams.id', $eligibleTeamIds)
+                $q->select('teams.id')
+                    ->whereIn('teams.id', $eligibleTeamIds)
                     ->whereIn('team_user.role', $rolesAtLeast);
-            })
-                ->orWhereExists(function ($q) use ($eligibleTeamIds) {
-                    $q->from('teams')
-                        ->whereColumn('teams.owner_id', 'users.id')
-                        ->whereIn('teams.id', $eligibleTeamIds);
-                });
+            })->orWhereExists(function ($q) use ($eligibleTeamIds) {
+                $q->from('teams')
+                    ->select('teams.id')
+                    ->whereColumn('teams.owner_id', 'users.id')
+                    ->whereIn('teams.id', $eligibleTeamIds);
+            });
         });
     }
+
 
 
     public function myTeamIdsAtLeast(TeamRoleEnum $min): QueryBuilder
@@ -202,7 +204,7 @@ trait HasTeams
         return DB::table('team_user')
             ->select('team_id')
             ->where('user_id', $this->getKey())
-            ->whereIn('role', self::rolesAtLeast($min));
+            ->whereIn('role', TeamRoleEnum::rolesAtLeast($min));
     }
 
     public function scopeSharesTeamWithActorAtLeast(
@@ -239,14 +241,11 @@ trait HasTeams
     public function hasTeamRoleAtLeast(Model $model, TeamRoleEnum|string $min): bool
     {
         $current = $this->teamRole($model);
-
         if ($current === null) {
             return false;
         }
-
         $minEnum = $min instanceof TeamRoleEnum ? $min : TeamRoleEnum::from($min);
-
-        return self::roleRank($current) >= self::roleRank($minEnum);
+        return $current->atLeast($minEnum);
     }
 
     public function hasTeamRoleOwner(Model $model): bool
