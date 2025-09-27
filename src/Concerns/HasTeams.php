@@ -147,6 +147,56 @@ trait HasTeams
         return in_array($current, $expected, true);
     }
 
+
+    public function scopeVisibleToActor(
+        EloquentBuilder $query,
+        Authenticatable $actor,
+        TeamRoleEnum    $minActorRole = TeamRoleEnum::ADMIN,
+        TeamRoleEnum    $minTargetRole = TeamRoleEnum::VIEWER,
+        bool            $onlyCurrentTeam = true
+    ): EloquentBuilder
+    {
+        $eligibleTeamIds = $actor->myTeamIdsAtLeast($minActorRole)->select('team_id');
+
+        if ($onlyCurrentTeam && !empty($actor->current_team_id)) {
+            $eligibleTeamIds->where('team_id', $actor->current_team_id);
+        }
+
+        $rolesAtLeast = match ($minTargetRole) {
+            TeamRoleEnum::VIEWER => [
+                TeamRoleEnum::VIEWER->value,
+                TeamRoleEnum::MEMBER->value,
+                TeamRoleEnum::ADMIN->value,
+                TeamRoleEnum::OWNER->value,
+            ],
+            TeamRoleEnum::MEMBER => [
+                TeamRoleEnum::MEMBER->value,
+                TeamRoleEnum::ADMIN->value,
+                TeamRoleEnum::OWNER->value,
+            ],
+            TeamRoleEnum::ADMIN => [
+                TeamRoleEnum::ADMIN->value,
+                TeamRoleEnum::OWNER->value,
+            ],
+            TeamRoleEnum::OWNER => [
+                TeamRoleEnum::OWNER->value,
+            ],
+        };
+
+        return $query->where(function ($outer) use ($eligibleTeamIds, $rolesAtLeast) {
+            $outer->whereHas('teams', function ($q) use ($eligibleTeamIds, $rolesAtLeast) {
+                $q->whereIn('teams.id', $eligibleTeamIds)
+                    ->whereIn('team_user.role', $rolesAtLeast);
+            })
+                ->orWhereExists(function ($q) use ($eligibleTeamIds) {
+                    $q->from('teams')
+                        ->whereColumn('teams.owner_id', 'users.id')
+                        ->whereIn('teams.id', $eligibleTeamIds);
+                });
+        });
+    }
+
+
     public function myTeamIdsAtLeast(TeamRoleEnum $min): QueryBuilder
     {
         return DB::table('team_user')
@@ -156,10 +206,11 @@ trait HasTeams
     }
 
     public function scopeSharesTeamWithActorAtLeast(
-        EloquentBuilder $query,
+        EloquentBuilder       $query,
         Model|Authenticatable $actor,
-        TeamRoleEnum $min
-    ): EloquentBuilder {
+        TeamRoleEnum          $min
+    ): EloquentBuilder
+    {
         $eligibleTeamIds = $actor->myTeamIdsAtLeast($min);
 
         return $query->whereHas('teams', fn($t) => $t->whereIn('teams.id', $eligibleTeamIds));
