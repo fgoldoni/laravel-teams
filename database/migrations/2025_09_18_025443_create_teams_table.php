@@ -12,6 +12,7 @@ return new class extends Migration {
         Schema::create('teams', function (Blueprint $blueprint): void {
             $blueprint->id();
             $blueprint->ulid()->unique();
+            $blueprint->string('avatar', 2048)->nullable();
             $blueprint->string('name', 255);
             $blueprint->unsignedBigInteger('owner_id')->index();
             $blueprint->boolean('online')->default(false);

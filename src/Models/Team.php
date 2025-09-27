@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Goldoni\LaravelTeams\Models;
 
+use Core\Traits\HasAvatarUrl;
 use Goldoni\LaravelTeams\Concerns\HasExtraUlid;
 use Goldoni\LaravelTeams\Database\Factories\TeamFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -18,6 +19,7 @@ class Team extends Model
     use SoftDeletes;
     use HasFactory;
     use HasExtraUlid;
+    use HasAvatarUrl;
 
     protected $table = 'teams';
 
