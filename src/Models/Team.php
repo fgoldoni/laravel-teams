@@ -21,18 +21,12 @@ class Team extends Model
     use HasExtraUlid;
     use HasAvatarUrl;
 
-    protected $table = 'teams';
 
-    protected $fillable = [
-        'ulid',
-        'name',
-        'owner_id',
-    ];
+    protected $guarded = [];
 
     protected function casts(): array
     {
         return [
-            'ulid' => 'string',
             'name' => 'string',
             'online' => 'boolean',
         ];
