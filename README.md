@@ -131,7 +131,7 @@ The package provides a publishable migration stub to add `current_team_id` to `u
 Applied to every package model to auto-assign `ulid` and use it for route key.
 
 ```php
-use Goldoni\LaravelTeams\Concerns\HasExtraUlid;
+use Goldoni\LaravelTeams\Concerns\HasUlidConcerns;
 ```
 
 ### Team

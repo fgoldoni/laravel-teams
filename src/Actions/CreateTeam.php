@@ -7,37 +7,36 @@ namespace Goldoni\LaravelTeams\Actions;
 use Goldoni\LaravelTeams\Enums\TeamRoleEnum;
 use Goldoni\LaravelTeams\Events\TeamCreated;
 use Goldoni\LaravelTeams\Exceptions\CannotCreateTeam;
-use Goldoni\LaravelTeams\Models\Team;
-use Goldoni\LaravelTeams\Models\TeamUser;
+use Goldoni\LaravelTeams\Support\ResolveModel;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Throwable;
 
-final readonly class CreateTeam
+final class CreateTeam
 {
-    public function __construct(private Team $team, private TeamUser $teamUser)
-    {
-    }
-
-    public function handle(Authenticatable $authenticatable, string $name): Team
+    public function handle(Authenticatable $authenticatable, string $name): Model
     {
         $ownerId = (int) $authenticatable->getAuthIdentifier();
-        $name    = trim($name);
+        $name    = \trim($name);
 
         try {
-            $team = DB::transaction(function () use ($ownerId, $name, $authenticatable): Team {
-                $team = $this->team->newQuery()->create([
+            $teamClass     = ResolveModel::team();
+            $teamUserClass = ResolveModel::teamUser();
+
+            $team = DB::transaction(function () use ($teamClass, $teamUserClass, $ownerId, $name, $authenticatable): Model {
+                $team = $teamClass::query()->create([
                     'ulid'     => (string) Str::ulid(),
                     'name'     => $name,
                     'owner_id' => $ownerId,
                 ]);
 
-                $this->teamUser->newQuery()->create([
-                    'ulid'     => (string) Str::ulid(),
-                    'team_id'  => $team->getKey(),
-                    'user_id'  => $ownerId,
-                    'role'     => TeamRoleEnum::OWNER,
+                $teamUserClass::query()->create([
+                    'ulid'    => (string) Str::ulid(),
+                    'team_id' => $team->getKey(),
+                    'user_id' => $ownerId,
+                    'role'    => TeamRoleEnum::OWNER,
                 ]);
 
                 $authenticatable->forceFill(['current_team_id' => $team->getKey()])->save();
@@ -45,11 +44,7 @@ final readonly class CreateTeam
                 return $team;
             });
 
-            if (DB::transactionLevel() > 0) {
-                DB::afterCommit(static fn () => TeamCreated::dispatch($team));
-            } else {
-                TeamCreated::dispatch($team);
-            }
+            DB::afterCommit(static fn () => TeamCreated::dispatch($team));
 
             return $team;
         } catch (Throwable $throwable) {

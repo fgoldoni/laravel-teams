@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use Goldoni\LaravelTeams\Models\Team;
+use Goldoni\LaravelTeams\Models\TeamUser;
+
 return [
     'roles' => [
         'OWNER'  => 'Owner',
@@ -14,4 +17,9 @@ return [
     'invite_notifications'     => true,
     'super_admin_role'         => 'Super Admin',
     'observe_current_team'     => true,
+    'models'                   => [
+        'team'      => Team::class,
+        'team_user' => TeamUser::class,
+        'user'      => null,
+    ],
 ];

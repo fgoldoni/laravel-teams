@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace Goldoni\LaravelTeams\Models;
 
-use Goldoni\LaravelTeams\Concerns\HasExtraUlid;
+use Goldoni\LaravelTeams\Concerns\HasUlidConcerns;
 use Goldoni\LaravelTeams\Database\Factories\TeamUserFactory;
 use Goldoni\LaravelTeams\Enums\TeamRoleEnum;
+use Goldoni\LaravelTeams\Support\ResolveModel;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -17,7 +18,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class TeamUser extends Model
 {
     use HasFactory;
-    use HasExtraUlid;
+    use HasUlidConcerns;
     use SoftDeletes;
 
     protected $table = 'team_user';
@@ -43,12 +44,12 @@ class TeamUser extends Model
 
     public function team(): BelongsTo
     {
-        return $this->belongsTo(Team::class);
+        return $this->belongsTo(ResolveModel::team());
     }
 
     public function user(): BelongsTo
     {
-        return $this->belongsTo(config('auth.providers.users.model'));
+        return $this->belongsTo(ResolveModel::user());
     }
 
     public function isOwner(): bool

@@ -7,8 +7,6 @@ namespace Goldoni\LaravelTeams\Actions;
 use Goldoni\LaravelTeams\Enums\TeamRoleEnum;
 use Goldoni\LaravelTeams\Events\InviteAccepted;
 use Goldoni\LaravelTeams\Exceptions\CannotAcceptInvite;
-use Goldoni\LaravelTeams\Models\Team;
-use Goldoni\LaravelTeams\Models\TeamUser;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -21,14 +19,12 @@ final readonly class AcceptInvite
     {
     }
 
-    public function handle(Team $team, Model $model, TeamRoleEnum $teamRoleEnum = TeamRoleEnum::MEMBER): void
+    public function handle(Model $team, Model $model, TeamRoleEnum $teamRoleEnum = TeamRoleEnum::MEMBER): void
     {
         try {
             Gate::authorize('acceptInvite', $team);
-
-            $membership = DB::transaction(fn (): TeamUser => $this->addTeamMember->handle($team, $model, $teamRoleEnum));
-
-            DB::afterCommit(fn () => InviteAccepted::dispatch($team, $model, (string) $membership->role->value));
+            $membership = DB::transaction(fn (): Model => $this->addTeamMember->handle($team, $model, $teamRoleEnum));
+            DB::afterCommit(fn () => InviteAccepted::dispatch($team, $model, (string) $membership->getAttribute('role')));
         } catch (AuthorizationException|Throwable $e) {
             throw new CannotAcceptInvite($e->getMessage(), 0, $e);
         }

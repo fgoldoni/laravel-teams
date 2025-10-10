@@ -67,7 +67,7 @@ enum TeamRoleEnum: string
     {
         return array_map(
             static fn (self $c) => $c->value,
-            array_filter(self::cases(), static fn (self $c) => $c->atLeast($min))
+            array_filter(self::cases(), static fn (self $c): bool => $c->atLeast($min))
         );
     }
 
@@ -75,7 +75,7 @@ enum TeamRoleEnum: string
     {
         return array_map(
             static fn (self $c) => $c->value,
-            array_filter(self::cases(), static fn (self $c) => $c->atMost($max))
+            array_filter(self::cases(), static fn (self $c): bool => $c->atMost($max))
         );
     }
 

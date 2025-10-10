@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Goldoni\LaravelTeams\Events;
 
-use Goldoni\LaravelTeams\Models\Team;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
@@ -14,7 +14,7 @@ final class TeamOwnershipTransferred
     use SerializesModels;
 
     public function __construct(
-        public Team $team,
+        public Model $team,
         public int $oldOwnerId,
         public int $newOwnerId
     ) {

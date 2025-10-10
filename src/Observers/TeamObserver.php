@@ -5,28 +5,28 @@ declare(strict_types=1);
 namespace Goldoni\LaravelTeams\Observers;
 
 use Goldoni\LaravelTeams\Jobs\RecalculateUsersCurrentTeam;
-use Goldoni\LaravelTeams\Models\Team;
+use Illuminate\Database\Eloquent\Model;
 
 class TeamObserver
 {
-    public function deleted(Team $team): void
+    public function deleted(Model $model): void
     {
-        $this->recalculateCurrentTeamForAffectedUsers($team);
+        $this->recalculateCurrentTeamForAffectedUsers($model);
     }
 
-    public function forceDeleted(Team $team): void
+    public function forceDeleted(Model $model): void
     {
-        $this->recalculateCurrentTeamForAffectedUsers($team);
+        $this->recalculateCurrentTeamForAffectedUsers($model);
     }
 
-    private function recalculateCurrentTeamForAffectedUsers(Team $team): void
+    private function recalculateCurrentTeamForAffectedUsers(Model $model): void
     {
-        $userIdentifiers         = $team->users()->pluck('users.id')->all();
-        $ownerIdentifierList     = $team->owner_id ? [$team->owner_id] : [];
+        $userIdentifiers         = $model->users()->pluck('users.id')->all();
+        $ownerIdentifierList     = $model->getAttribute('owner_id') ? [$model->getAttribute('owner_id')] : [];
         $affectedUserIdentifiers = array_values(array_unique(array_merge($userIdentifiers, $ownerIdentifierList)));
 
         if ($affectedUserIdentifiers !== []) {
-            RecalculateUsersCurrentTeam::dispatchSync($affectedUserIdentifiers, $team->getKey());
+            RecalculateUsersCurrentTeam::dispatchSync($affectedUserIdentifiers, (int) $model->getKey());
         }
     }
 }

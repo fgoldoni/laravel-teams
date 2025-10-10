@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Goldoni\LaravelTeams\Jobs;
 
-use Goldoni\LaravelTeams\Models\Team;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
@@ -37,7 +37,7 @@ class RecalculateUsersCurrentTeam implements ShouldQueue
                 ->orderBy('id')
                 ->first();
 
-            if ($nextOwnedTeam instanceof Team) {
+            if ($nextOwnedTeam instanceof Model) {
                 $user->forceFill(['current_team_id' => $nextOwnedTeam->getKey()])->save();
 
                 return;
@@ -48,7 +48,7 @@ class RecalculateUsersCurrentTeam implements ShouldQueue
                 ->orderBy('teams.id')
                 ->first();
 
-            if ($nextMemberTeam instanceof Team) {
+            if ($nextMemberTeam instanceof Model) {
                 $user->forceFill(['current_team_id' => $nextMemberTeam->getKey()])->save();
 
                 return;

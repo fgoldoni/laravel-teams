@@ -6,9 +6,9 @@ namespace Goldoni\LaravelTeams\Concerns;
 
 use Illuminate\Support\Str;
 
-trait HasExtraUlid
+trait HasUlidConcerns
 {
-    protected static function bootHasExtraUlid(): void
+    protected static function bootHasUlidConcerns(): void
     {
         static::creating(function ($model): void {
             if (empty($model->ulid)) {

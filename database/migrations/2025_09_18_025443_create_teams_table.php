@@ -1,8 +1,6 @@
 <?php
 
 declare(strict_types=1);
-
-use App\Enums\LocaleEnum;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -18,7 +16,8 @@ return new class extends Migration {
             $blueprint->string('subdomain')->unique()->nullable()->index();
             $blueprint->unsignedBigInteger('owner_id')->index();
             $blueprint->boolean('online')->default(true);
-            $blueprint->string('locale', '4')->default(LocaleEnum::FR->value);
+            $blueprint->string('locale', '6')->default(config('app.locale'));
+            ;
             $blueprint->string('currency', 3)->default('EUR');
             $blueprint->string('timezone', 50)->nullable();
 

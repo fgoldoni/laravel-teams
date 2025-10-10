@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Goldoni\LaravelTeams\Database\Factories;
 
 use Goldoni\LaravelTeams\Models\Team;
+use Goldoni\LaravelTeams\Support\ResolveModel;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -14,11 +15,11 @@ class TeamFactory extends Factory
 
     public function definition(): array
     {
-        $userModel = config('auth.providers.users.model');
+        config('auth.providers.users.model');
 
         return [
             'name'     => $this->faker->company(),
-            'owner_id' => $userModel::factory(),
+            'owner_id' => (ResolveModel::user())::factory(),
             'ulid'     => (string) Str::ulid(),
         ];
     }

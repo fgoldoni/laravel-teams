@@ -18,8 +18,7 @@ use Goldoni\LaravelTeams\Events\TeamDeleted;
 use Goldoni\LaravelTeams\Events\TeamOwnershipTransferred;
 use Goldoni\LaravelTeams\Events\TeamsHealthCheckFailed;
 use Goldoni\LaravelTeams\Events\TeamsHealthCheckPassed;
-use Goldoni\LaravelTeams\Models\Team;
-use Goldoni\LaravelTeams\Models\TeamUser;
+use Goldoni\LaravelTeams\Support\ResolveModel;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Config;
@@ -42,24 +41,32 @@ final class TeamsHealthCheckCommand extends Command
 
         $results->push($this->check('php.version', fn (): bool => PHP_VERSION_ID >= 80400, PHP_VERSION));
         $results->push($this->check('laravel.version', fn (): bool => version_compare(App::version(), '12.0.0', '>='), App::version()));
-        $results->push($this->check('config.teams.loaded', fn (): bool => is_array(Config::get('teams')), (string)json_encode(Config::get('teams'), JSON_UNESCAPED_SLASHES)));
-        $results->push($this->check('config.teams.roles', fn (): bool => $this->hasTeamRoles(), (string)json_encode(Config::get('teams.roles'))));
-        $results->push($this->check('config.teams.super_admin_role', fn (): bool => is_string(Config::get('teams.super_admin_role')) && Config::get('teams.super_admin_role') !== '', (string)Config::get('teams.super_admin_role')));
+        $results->push($this->check('config.teams.loaded', fn (): bool => is_array(Config::get('teams')), (string) json_encode(Config::get('teams'), JSON_UNESCAPED_SLASHES)));
+        $results->push($this->check('config.teams.roles', fn (): bool => $this->hasTeamRoles(), (string) json_encode(Config::get('teams.roles'))));
+        $results->push($this->check('config.teams.super_admin_role', fn (): bool => is_string(Config::get('teams.super_admin_role')) && Config::get('teams.super_admin_role') !== '', (string) Config::get('teams.super_admin_role')));
         $results->push($this->check('db.table.teams', fn () => Schema::hasTable('teams')));
         $results->push($this->check('db.table.team_user', fn () => Schema::hasTable('team_user')));
         $results->push($this->check('db.column.users.current_team_id', fn () => Schema::hasColumn('users', 'current_team_id')));
         $results->push($this->check('db.columns.teams', fn () => Schema::hasColumns('teams', ['id', 'ulid', 'name', 'owner_id'])));
         $results->push($this->check('db.columns.team_user', fn () => Schema::hasColumns('team_user', ['id', 'ulid', 'team_id', 'user_id', 'role'])));
-        $results->push($this->check('models.team.ulidRoute', fn (): bool => (new Team)->getRouteKeyName() === 'ulid', (new Team)->getRouteKeyName()));
+        $results->push($this->check('models.team.ulidRoute', function (): bool {
+            $teamClass = ResolveModel::team();
+
+            return (new $teamClass)->getRouteKeyName() === 'ulid';
+        }, function (): string {
+            $teamClass = ResolveModel::team();
+
+            return (new $teamClass)->getRouteKeyName();
+        }));
         $results->push($this->check('models.teamuser.casts.roleEnum', fn (): bool => $this->teamUserRoleIsEnum()));
         $results->push($this->check('policy.team.registered', function (): bool {
-            $p = Gate::getPolicyFor(Team::class);
+            $policy = Gate::getPolicyFor(ResolveModel::team());
 
-            if (is_object($p)) {
+            if (is_object($policy)) {
                 return true;
             }
 
-            return is_string($p) && class_exists($p);
+            return is_string($policy) && class_exists($policy);
         }, $this->policyDetail()));
         $results->push($this->check('gate.before.super_admin', fn (): bool => $this->gateBeforeActive()));
         $results->push($this->check('events.TeamCreated', fn (): bool => class_exists(TeamCreated::class)));
@@ -75,34 +82,34 @@ final class TeamsHealthCheckCommand extends Command
         $results->push($this->check('indexes.team_user.ulid.unique', fn (): bool => $this->hasUniqueIndex('team_user', ['ulid'])));
         $results->push($this->check('indexes.team_user.team_user.unique', fn (): bool => $this->hasUniqueIndex('team_user', ['team_id', 'user_id'])));
 
-        $spatie = class_exists(PermissionRegistrar::class);
+        $spatieInstalled = class_exists(PermissionRegistrar::class);
 
-        if ($spatie) {
-            $results->push($this->check('spatie.guard', fn (): bool => is_string(Config::get('model-permissions.guard_name')) && Config::get('model-permissions.guard_name') !== '', (string)Config::get('model-permissions.guard_name')));
+        if ($spatieInstalled) {
+            $results->push($this->check('spatie.guard', fn (): bool => is_string(Config::get('model-permissions.guard_name')) && Config::get('model-permissions.guard_name') !== '', (string) Config::get('model-permissions.guard_name')));
         }
 
-        $ok = $results->every(fn (array $r): bool => $r['status'] === 'ok');
+        $allOk = $results->every(fn (array $r): bool => $r['status'] === 'ok');
 
-        if ($ok) {
+        if ($allOk) {
             Event::dispatch(new TeamsHealthCheckPassed($results->toArray()));
         } else {
             Event::dispatch(new TeamsHealthCheckFailed($results->toArray()));
         }
 
         if ($this->option('json')) {
-            $this->line(json_encode(['ok' => $ok, 'checks' => $results], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+            $this->line(json_encode(['ok' => $allOk, 'checks' => $results], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
         } else {
-            $this->table(['Check', 'Status', 'Detail'], $results->map(fn ($r): array => [$r['key'], $r['status'], (string)($r['detail'] ?? '')]));
-            $this->line($ok ? '<info>OK</info>' : '<error>FAIL</error>');
+            $this->table(['Check', 'Status', 'Detail'], $results->map(fn ($r): array => [$r['key'], $r['status'], (string) ($r['detail'] ?? '')]));
+            $this->line($allOk ? '<info>OK</info>' : '<error>FAIL</error>');
         }
 
-        return $ok ? self::SUCCESS : self::FAILURE;
+        return $allOk ? self::SUCCESS : self::FAILURE;
     }
 
     private function check(string $key, callable $fn, mixed $detail = null): array
     {
         try {
-            $passed = (bool)value($fn);
+            $passed = (bool) value($fn);
 
             if ($detail instanceof Closure) {
                 $detail = value($detail);
@@ -118,7 +125,7 @@ final class TeamsHealthCheckCommand extends Command
     {
         $roles = Config::get('teams.roles');
 
-        if (!is_array($roles)) {
+        if (! is_array($roles)) {
             return false;
         }
 
@@ -132,8 +139,9 @@ final class TeamsHealthCheckCommand extends Command
 
     private function teamUserRoleIsEnum(): bool
     {
-        $casts = (new TeamUser)->getCasts();
-        $cast  = $casts['role'] ?? null;
+        $teamUserClass = ResolveModel::teamUser();
+        $casts         = (new $teamUserClass)->getCasts();
+        $cast          = $casts['role'] ?? null;
 
         if ($cast instanceof BackedEnum) {
             return true;
@@ -158,12 +166,13 @@ final class TeamsHealthCheckCommand extends Command
         try {
             $conn = DB::connection();
 
-            if (!method_exists($conn, 'getDoctrineSchemaManager')) {
+            if (! method_exists($conn, 'getDoctrineSchemaManager')) {
                 return true;
             }
 
             $schema  = $conn->getDoctrineSchemaManager();
             $indexes = $schema->listTableIndexes($table);
+
             foreach ($indexes as $index) {
                 if ($index->isUnique() && $this->sameColumns($index->getColumns(), $columns)) {
                     return true;
@@ -186,14 +195,14 @@ final class TeamsHealthCheckCommand extends Command
 
     private function policyDetail(): string
     {
-        $p = Gate::getPolicyFor(Team::class);
+        $policy = Gate::getPolicyFor(ResolveModel::team());
 
-        if (is_object($p)) {
-            return $p::class;
+        if (is_object($policy)) {
+            return $policy::class;
         }
 
-        if (is_string($p)) {
-            return $p;
+        if (is_string($policy)) {
+            return $policy;
         }
 
         return 'null';

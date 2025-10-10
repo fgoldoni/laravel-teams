@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Goldoni\LaravelTeams\Events;
 
-use Goldoni\LaravelTeams\Models\Team;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
@@ -13,7 +13,7 @@ final class InviteAccepted
     use Dispatchable;
     use SerializesModels;
 
-    public function __construct(public Team $team, public object $user, public string $role)
+    public function __construct(public Model $team, public object $user, public string $role)
     {
     }
 }

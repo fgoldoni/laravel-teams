@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Goldoni\LaravelTeams\Concerns;
 
 use Goldoni\LaravelTeams\Enums\TeamRoleEnum;
-use Goldoni\LaravelTeams\Models\Team;
+use Goldoni\LaravelTeams\Support\ResolveModel;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\Model;
@@ -20,20 +20,20 @@ trait HasTeams
 {
     public function teams(): BelongsToMany
     {
-        return $this->belongsToMany(Team::class, 'team_user')
+        return $this->belongsToMany(ResolveModel::team(), 'team_user')
             ->withPivot(['id', 'ulid', 'role'])
             ->withTimestamps();
     }
 
     public function ownedTeams(): HasMany
     {
-        return $this->hasMany(Team::class, 'owner_id');
+        return $this->hasMany(ResolveModel::team(), 'owner_id');
     }
 
     public function currentTeam(): BelongsTo
     {
-        if (!empty($this->getAttribute('current_team_id')) || !$this->exists) {
-            return $this->belongsTo(Team::class, 'current_team_id');
+        if (! empty($this->getAttribute('current_team_id')) || ! $this->exists) {
+            return $this->belongsTo(ResolveModel::team(), 'current_team_id');
         }
 
         if ($this->relationLoaded('ownedTeams') && $this->ownedTeams->isNotEmpty()) {
@@ -42,7 +42,7 @@ trait HasTeams
             $fallback = $this->ownedTeams()->oldest('id')->first();
         }
 
-        if (!$fallback) {
+        if (! $fallback) {
             if ($this->relationLoaded('teams') && $this->teams->isNotEmpty()) {
                 $fallback = $this->teams->sortBy('id')->first();
             } else {
@@ -50,16 +50,16 @@ trait HasTeams
             }
         }
 
-        if ($fallback instanceof Team) {
+        if ($fallback) {
             $this->switchTeam($fallback);
         }
 
-        return $this->belongsTo(Team::class, 'current_team_id');
+        return $this->belongsTo(ResolveModel::team(), 'current_team_id');
     }
 
     public function belongsToTeam(Model $model): bool
     {
-        if ((int)$model->owner_id === (int)$this->getKey()) {
+        if ((int) $model->owner_id === (int) $this->getKey()) {
             return true;
         }
 
@@ -68,7 +68,7 @@ trait HasTeams
 
     public function switchTeam(Model $model): bool
     {
-        if (!$this->belongsToTeam($model)) {
+        if (! $this->belongsToTeam($model)) {
             return false;
         }
 
@@ -85,17 +85,17 @@ trait HasTeams
 
     public function ownsTeam(Model $model): bool
     {
-        return (int)$model->owner_id === (int)$this->getKey();
+        return (int) $model->owner_id === (int) $this->getKey();
     }
 
     public function isCurrentTeam(Model $model): bool
     {
-        return (int)$this->getAttribute('current_team_id') === (int)$model->getKey();
+        return (int) $this->getAttribute('current_team_id') === (int) $model->getKey();
     }
 
     public function allTeams(): Collection
     {
-        $owned = $this->ownedTeams()->get();
+        $owned  = $this->ownedTeams()->get();
         $member = $this->teams()->get();
 
         return $owned->merge($member)->unique('id')->values();
@@ -103,7 +103,7 @@ trait HasTeams
 
     public function teamRole(Model $model): ?TeamRoleEnum
     {
-        if ((int)$model->owner_id === (int)$this->getKey()) {
+        if ((int) $model->owner_id === (int) $this->getKey()) {
             return TeamRoleEnum::OWNER;
         }
 
@@ -115,7 +115,7 @@ trait HasTeams
             return $role;
         }
 
-        return $role !== null ? TeamRoleEnum::tryFrom((string)$role) : null;
+        return $role !== null ? TeamRoleEnum::tryFrom((string) $role) : null;
     }
 
     public function hasTeamRole(Model $model, TeamRoleEnum|string $role): bool
@@ -140,26 +140,24 @@ trait HasTeams
         }
 
         $expected = array_map(
-            fn($r) => $r instanceof TeamRoleEnum ? $r : TeamRoleEnum::from((string)$r),
+            fn ($r) => $r instanceof TeamRoleEnum ? $r : TeamRoleEnum::from((string) $r),
             $roles
         );
 
         return in_array($current, $expected, true);
     }
 
-
     public function scopeVisibleToActor(
-        EloquentBuilder $query,
-        Authenticatable $actor,
-        TeamRoleEnum    $minActorRole = TeamRoleEnum::ADMIN,
-        TeamRoleEnum    $minTargetRole = TeamRoleEnum::VIEWER,
-        bool            $onlyCurrentTeam = true
-    ): EloquentBuilder
-    {
-        $eligibleTeamIds = $actor->myTeamIdsAtLeast($minActorRole)->select('team_id');
+        EloquentBuilder $eloquentBuilder,
+        Authenticatable $authenticatable,
+        TeamRoleEnum $minActorRole = TeamRoleEnum::ADMIN,
+        TeamRoleEnum $minTargetRole = TeamRoleEnum::VIEWER,
+        bool $onlyCurrentTeam = true
+    ): EloquentBuilder {
+        $eligibleTeamIds = $authenticatable->myTeamIdsAtLeast($minActorRole)->select('team_id');
 
-        if ($onlyCurrentTeam && !empty($actor->current_team_id)) {
-            $eligibleTeamIds->where('team_id', $actor->current_team_id);
+        if ($onlyCurrentTeam && ! empty($authenticatable->current_team_id)) {
+            $eligibleTeamIds->where('team_id', $authenticatable->current_team_id);
         }
 
         $rolesAtLeast = match ($minTargetRole) {
@@ -183,12 +181,12 @@ trait HasTeams
             ],
         };
 
-        return $query->where(function ($outer) use ($eligibleTeamIds, $rolesAtLeast) {
-            $outer->whereHas('teams', function ($q) use ($eligibleTeamIds, $rolesAtLeast) {
+        return $eloquentBuilder->where(function ($outer) use ($eligibleTeamIds, $rolesAtLeast): void {
+            $outer->whereHas('teams', function ($q) use ($eligibleTeamIds, $rolesAtLeast): void {
                 $q->select('teams.id')
                     ->whereIn('teams.id', $eligibleTeamIds)
                     ->whereIn('team_user.role', $rolesAtLeast);
-            })->orWhereExists(function ($q) use ($eligibleTeamIds) {
+            })->orWhereExists(function ($q) use ($eligibleTeamIds): void {
                 $q->from('teams')
                     ->select('teams.id')
                     ->whereColumn('teams.owner_id', 'users.id')
@@ -197,34 +195,31 @@ trait HasTeams
         });
     }
 
-
-
-    public function myTeamIdsAtLeast(TeamRoleEnum $min): QueryBuilder
+    public function myTeamIdsAtLeast(TeamRoleEnum $teamRoleEnum): QueryBuilder
     {
         return DB::table('team_user')
             ->select('team_id')
             ->where('user_id', $this->getKey())
-            ->whereIn('role', TeamRoleEnum::rolesAtLeast($min));
+            ->whereIn('role', TeamRoleEnum::rolesAtLeast($teamRoleEnum));
     }
 
     public function scopeSharesTeamWithActorAtLeast(
-        EloquentBuilder       $query,
+        EloquentBuilder $eloquentBuilder,
         Model|Authenticatable $actor,
-        TeamRoleEnum          $min
-    ): EloquentBuilder
-    {
-        $eligibleTeamIds = $actor->myTeamIdsAtLeast($min);
+        TeamRoleEnum $teamRoleEnum
+    ): EloquentBuilder {
+        $eligibleTeamIds = $actor->myTeamIdsAtLeast($teamRoleEnum);
 
-        return $query->whereHas('teams', fn($t) => $t->whereIn('teams.id', $eligibleTeamIds));
+        return $eloquentBuilder->whereHas('teams', fn ($t) => $t->whereIn('teams.id', $eligibleTeamIds));
     }
 
-    protected static function rolesAtLeast(TeamRoleEnum $min): array
+    protected static function rolesAtLeast(TeamRoleEnum $teamRoleEnum): array
     {
-        $minRank = self::roleRank($min);
+        $minRank = self::roleRank($teamRoleEnum);
 
         return array_map(
-            static fn(TeamRoleEnum $e) => $e->value,
-            array_filter(TeamRoleEnum::cases(), static fn(TeamRoleEnum $e) => self::roleRank($e) >= $minRank)
+            static fn (TeamRoleEnum $teamRoleEnum) => $teamRoleEnum->value,
+            array_filter(TeamRoleEnum::cases(), static fn (TeamRoleEnum $teamRoleEnum): bool => self::roleRank($teamRoleEnum) >= $minRank)
         );
     }
 
@@ -233,18 +228,21 @@ trait HasTeams
         return match ($teamRoleEnum) {
             TeamRoleEnum::VIEWER => 1,
             TeamRoleEnum::MEMBER => 2,
-            TeamRoleEnum::ADMIN => 3,
-            TeamRoleEnum::OWNER => 4,
+            TeamRoleEnum::ADMIN  => 3,
+            TeamRoleEnum::OWNER  => 4,
         };
     }
 
     public function hasTeamRoleAtLeast(Model $model, TeamRoleEnum|string $min): bool
     {
         $current = $this->teamRole($model);
+
         if ($current === null) {
             return false;
         }
+
         $minEnum = $min instanceof TeamRoleEnum ? $min : TeamRoleEnum::from($min);
+
         return $current->atLeast($minEnum);
     }
 

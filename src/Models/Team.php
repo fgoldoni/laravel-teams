@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Goldoni\LaravelTeams\Models;
 
 use Core\Traits\HasAvatarUrl;
-use Goldoni\LaravelTeams\Concerns\HasExtraUlid;
+use Goldoni\LaravelTeams\Concerns\HasUlidConcerns;
 use Goldoni\LaravelTeams\Database\Factories\TeamFactory;
+use Goldoni\LaravelTeams\Support\ResolveModel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,23 +19,22 @@ class Team extends Model
 {
     use SoftDeletes;
     use HasFactory;
-    use HasExtraUlid;
+    use HasUlidConcerns;
     use HasAvatarUrl;
-
 
     protected $guarded = [];
 
     protected function casts(): array
     {
         return [
-            'name' => 'string',
+            'name'   => 'string',
             'online' => 'boolean',
         ];
     }
 
     public function owner(): BelongsTo
     {
-        return $this->belongsTo(config('auth.providers.users.model'), 'owner_id');
+        return $this->belongsTo(ResolveModel::user(), 'owner_id');
     }
 
     protected static function newFactory(): TeamFactory
@@ -44,13 +44,13 @@ class Team extends Model
 
     public function users(): BelongsToMany
     {
-        return $this->belongsToMany(config('auth.providers.users.model'), 'team_user')
+        return $this->belongsToMany(ResolveModel::user(), 'team_user')
             ->withPivot(['id', 'ulid', 'role'])
             ->withTimestamps();
     }
 
     public function memberships(): HasMany
     {
-        return $this->hasMany(TeamUser::class);
+        return $this->hasMany(ResolveModel::teamUser());
     }
 }

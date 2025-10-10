@@ -6,10 +6,10 @@ namespace Goldoni\LaravelTeams\Providers;
 
 use Goldoni\LaravelTeams\Console\Commands\TeamsHealthCheckCommand;
 use Goldoni\LaravelTeams\Contracts\TeamsManager as TeamsManagerContract;
-use Goldoni\LaravelTeams\Models\Team;
 use Goldoni\LaravelTeams\Observers\TeamObserver;
 use Goldoni\LaravelTeams\Policies\TeamPolicy;
 use Goldoni\LaravelTeams\Services\TeamsManager;
+use Goldoni\LaravelTeams\Support\ResolveModel;
 use Goldoni\ModelPermissions\Console\Commands\ModelPermissionsHealthCheckCommand;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -37,10 +37,11 @@ class TeamsServiceProvider extends ServiceProvider
 
         $this->loadMigrationsFrom(__DIR__ . '/../../database/migrations');
 
-        Gate::policy(Team::class, TeamPolicy::class);
+        $teamClass = ResolveModel::team();
+        Gate::policy($teamClass, TeamPolicy::class);
 
         if (config('teams.observe_current_team', true)) {
-            Team::observe(TeamObserver::class);
+            $teamClass::observe(TeamObserver::class);
         }
 
         Gate::before(function ($user): ?true {
