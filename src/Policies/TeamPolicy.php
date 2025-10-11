@@ -19,9 +19,9 @@ final class TeamPolicy extends BaseModelPolicy
         $this->modelClass = ResolveModel::team();
     }
 
-    public function before(Model $user, string $ability): ?bool
+    public function before(Model $model, string $ability): ?bool
     {
-        if ($this->isUserInstance($user) && method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin()) {
+        if ($this->isUserInstance($model) && method_exists($model, 'isSuperAdmin') && $model->isSuperAdmin()) {
             return true;
         }
 
@@ -210,9 +210,9 @@ final class TeamPolicy extends BaseModelPolicy
         return $this->isUserInstance($user) && $this->isTeamInstance($team) && $user->isOnTeam($team);
     }
 
-    private function userAllTeamsCount(Model $user): int
+    private function userAllTeamsCount(Model $model): int
     {
-        return $this->isUserInstance($user) ? $user->allTeams()->count() : 0;
+        return $this->isUserInstance($model) ? $model->allTeams()->count() : 0;
     }
 
     private function isOwner(Model $user, Model $team): bool
