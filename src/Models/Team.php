@@ -24,6 +24,10 @@ class Team extends Model
 
     protected $guarded = [];
 
+    protected $appends = [
+        'avatar_url'
+    ];
+
     protected function casts(): array
     {
         return [
