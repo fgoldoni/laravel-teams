@@ -16,9 +16,4 @@ trait HasUlidConcerns
             }
         });
     }
-
-    public function getRouteKeyName(): string
-    {
-        return 'ulid';
-    }
 }
