@@ -17,10 +17,16 @@ use Throwable;
 
 final class AddTeamMember
 {
-    public function handle(Model $team, Model $model, TeamRoleEnum $teamRoleEnum = TeamRoleEnum::MEMBER): Model
-    {
+    public function handle(
+        Model $team,
+        Model $model,
+        TeamRoleEnum $teamRoleEnum = TeamRoleEnum::MEMBER,
+        bool $skipAuthorization = false
+    ): Model {
         try {
-            Gate::authorize('manageMembers', $team);
+            if (! $skipAuthorization) {
+                Gate::authorize('manageMembers', $team);
+            }
 
             $teamUserClass = ResolveModel::teamUser();
             $wasCreated    = false;
