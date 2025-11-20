@@ -49,15 +49,6 @@ final class TeamsHealthCheckCommand extends Command
         $results->push($this->check('db.column.users.current_team_id', fn () => Schema::hasColumn('users', 'current_team_id')));
         $results->push($this->check('db.columns.teams', fn () => Schema::hasColumns('teams', ['id', 'ulid', 'name', 'owner_id'])));
         $results->push($this->check('db.columns.team_user', fn () => Schema::hasColumns('team_user', ['id', 'ulid', 'team_id', 'user_id', 'role'])));
-        $results->push($this->check('models.team.ulidRoute', function (): bool {
-            $teamClass = ResolveModel::team();
-
-            return (new $teamClass)->getRouteKeyName() === 'ulid';
-        }, function (): string {
-            $teamClass = ResolveModel::team();
-
-            return (new $teamClass)->getRouteKeyName();
-        }));
         $results->push($this->check('models.teamuser.casts.roleEnum', fn (): bool => $this->teamUserRoleIsEnum()));
         $results->push($this->check('policy.team.registered', function (): bool {
             $policy = Gate::getPolicyFor(ResolveModel::team());
