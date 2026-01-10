@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Goldoni\LaravelTeams\Models;
 
+use Core\Traits\BelongsToTeam;
+use Core\Traits\BelongsToUser;
 use Goldoni\LaravelTeams\Concerns\HasUlidConcerns;
 use Goldoni\LaravelTeams\Database\Factories\TeamUserFactory;
 use Goldoni\LaravelTeams\Enums\TeamRoleEnum;
@@ -20,6 +22,8 @@ class TeamUser extends Model
     use HasFactory;
     use HasUlidConcerns;
     use SoftDeletes;
+    use BelongsToUser;
+    use BelongsToTeam;
 
     protected $table = 'team_user';
 
@@ -40,16 +44,6 @@ class TeamUser extends Model
     protected static function newFactory(): TeamUserFactory
     {
         return TeamUserFactory::new();
-    }
-
-    public function team(): BelongsTo
-    {
-        return $this->belongsTo(ResolveModel::team());
-    }
-
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(ResolveModel::user());
     }
 
     public function isOwner(): bool
